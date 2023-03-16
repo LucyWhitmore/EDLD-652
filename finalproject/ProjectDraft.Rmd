@@ -2,7 +2,9 @@
 title: "Project Draft"
 author: "Lucy Whitmore"
 date: "2/27/2023"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +28,7 @@ science_achievement_1 <- rio::import(here::here("finalproject/Data", "Eighth-gra
 science_achievement_2 <- rio::import(here::here("finalproject/Data", "Eighth-grade science achievement levels (1).xlsx"))
 funding <- rio::import(here::here("finalproject/Data", "Per-pupil educational expenditures.xlsx"))
 
-census <- read.csv("./us census bureau regions and divisions.csv",header=TRUE)
+#census <- read.csv("./us census bureau regions and divisions.csv",header=TRUE)
 ```
 
 
@@ -90,8 +92,9 @@ science_plot <- science_achievement %>%
   geom_line() +
   scale_color_manual(values=met.brewer("Morgenstern", 4)) +
   labs(x="School Year", y = "Proportion", title = "Science Achievement (US average)", color = "Achievement Level")
+```
 
-
+```{r}
 math_plot <- math_achievement %>% 
   filter(Location=="United States") %>% 
   ggplot(aes(x=TimeFrame, y=Data, group = AchievementLevel, color=AchievementLevel)) +
@@ -178,7 +181,10 @@ value_col = "Data") +
   scale_fill_gradientn(colors=met.brewer("Morgenstern")) +
   labs(title="Science Achievement, Basic (2019)") +
   theme_statebins("right")
+```
 
+
+```{r}
 statebins(science_2015 %>% filter(AchievementLevel == "At or above proficient"),
 state_col = "NAME",
 value_col = "Data") +
@@ -186,6 +192,10 @@ value_col = "Data") +
   labs(title="Science Achievement, Proficient (2019)") +
   theme_statebins("right")
 
+```
+
+
+```{r}
 ggplot(science_2015, aes(state=NAME, fill=Data)) +
   geom_statebins() +
   coord_equal() +
@@ -193,23 +203,30 @@ ggplot(science_2015, aes(state=NAME, fill=Data)) +
   facet_wrap(~AchievementLevel) +
   labs(title="Science Achievement (2015)") +
   theme_statebins("right")
+```
 
 
+```{r}
 statebins(math_2019 %>% filter(AchievementLevel == "At or above basic"),
 state_col = "NAME",
 value_col = "Data") +
     scale_fill_gradientn(colors=met.brewer("Morgenstern")) +
   labs(title="Math Achievement, Basic (2019)") +
   theme_statebins("right")
+```
 
+
+```{r}
 statebins(math_2019 %>% filter(AchievementLevel == "At or above proficient"),
 state_col = "NAME",
 value_col = "Data") +
     scale_fill_gradientn(colors=met.brewer("Morgenstern")) +
   labs(title="Math Achievement, Proficient (2019)") +
   theme_statebins("right")
+```
 
 
+```{r}
 ggplot(math_2019, aes(state=NAME, fill=Data)) +
   geom_statebins() +
   scale_fill_gradientn(colors=met.brewer("Morgenstern")) +
@@ -471,6 +488,7 @@ plot_grid(funding_plot, bottom_row, labels = c('A', ''), label_size = 12, ncol =
 
 **Question 4**
 How does funding track with educational achievement in math and science?
+
 ```{r}
 # spending on top
 # basic performance on both math and science underneath
