@@ -1,0 +1,194 @@
+---
+title: "Lab 4"
+author: "Lucy Whitmore"
+date: "2023-02-14"
+output:
+  pdf_document: default
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{lscape}
+  - \newcommand{\blandscape}{\begin{landscape}}
+  - \newcommand{\elandscape}{\end{landscape}}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE,
+                      fig.width = 10,
+                      fig.height = 10)
+
+```
+
+## Getting Started
+
+You can download the `transit_cost.csv` data from the website.
+
+```{r,eval=TRUE,echo=TRUE}
+
+require(tidyverse)
+require(lubridate)
+require(ungeviz)
+require(dviz.supp)
+require(ggtext)
+require(countrycode)
+
+transit_cost <- read_csv('./transit_cost.csv')
+```
+
+## Question 1
+
+Use the transit costs data to reproduce the following plot. To do so, you will need to do a small amount of data cleaning, then calculate the means and  standard errors (of the mean) for each country. Please filter to only counties with at least three observations. To use actual country names, rather than abbreviations, join your dataset with the output from the following
+
+```{r eval = T, echo = TRUE}
+country_codes <- countrycode::codelist %>% 
+  select(country_name = country.name.en, country = ecb)
+```
+
+```{r,echo=TRUE,eval=TRUE}
+# calculate means and standard deviations, count observations
+transit_cost_means <- transit_cost %>% 
+  group_by(country) %>% 
+  mutate(real_cost = as.numeric(real_cost)) %>% 
+  summarise(m_cost=mean(real_cost, na.rm=T), sd_cost = sd(real_cost, na.rm=T), n = n()) %>% 
+  ungroup() %>% 
+# filter to countries with >2 observations
+  filter(n>2) %>% 
+  na.omit() %>% 
+  arrange(m_cost) 
+
+#rename UK to GB so that datasets will merge properly
+transit_cost_means["country"][transit_cost_means["country"] == "UK"] <- "GB"
+
+# join datasets to get country names
+transit_countries <- left_join(transit_cost_means, country_codes)
+
+transit_countries$country_name <- factor(transit_countries$country_name, levels = transit_countries$country_name)
+
+```
+
+```{r}
+p <- transit_countries %>% 
+  ggplot(aes(x=m_cost, y=country_name, xmin=m_cost-sd_cost, xmax=m_cost+sd_cost))
+
+p +  geom_pointrange(fill='blue', color='grey', shape=21, size=1) +
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                colour = "grey"), 
+    panel.grid.minor = element_line(size = 0.5, linetype = 'solid',
+                                colour = "grey"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.ticks.y=element_blank(),
+   text = element_text(size = 20)
+    ) +
+  labs(x="Real cost (In millions of dollars)", y = "Country",title="Cost to build transit systems vary across countries", caption="Data provided through #tidytuesday by the Transit Costs Project")
+
+
+```
+
+
+
+## Question 2
+
+A local news source reported on Nov 3, 2022, that the percentage of voters supporting Measure 114 was 46.1%. This estimate was based on only 577 voters; therefore, it has a margin of error of 4.1%.
+
+Assume that the margin of error represents twice the standard error of the percentage estimate. Based on this information, create a quantile dot plot to represent the probability that Measure 114 would pass (more than 50% of all voters would support it ).
+
+**Source:** [Oregon gun control Measure 114 polls closely](https://www.kgw.com/article/news/crime/gun-violence/measure-114-oregon-poll-results-gun-control-close/283-c342776d-f3b3-4799-ba76-061424bbd62e)
+
+```{r,echo=TRUE,eval=TRUE}
+# Parameters
+    
+mu  <- 3.9 #advantage: 50-46.1 = 3.9
+std <- 2.09 # margin of error 4.1     , 1.76 = 1.96*SD,
+
+# margin of error is 4.1
+#example: 4.1 = 1.96*SD 
+    
+x <- seq(0.01,.99,.01) # generate a sequence of probabilities
+                       # from 1% to 99% by 1% increments
+
+# Quantile data frame based on normal distribution
+
+  q_df <- data.frame(x = x,
+                     q = qnorm(x, mu, std)) 
+  
+  q_df$winner <- ifelse(q_df$q <= 0,"#f8f1a9","#b1daf4")
+  
+  q_df
+
+  
+# Dotplot
+  
+  ggplot(q_df, aes(q)) +
+    geom_dotplot(aes(color=winner, fill=winner),binwidth=0.21)+
+    theme_minimal()+
+    scale_color_manual(labels = c("114 Fail", "114 Pass"), values = c("#b1daf4", "#f8f1a9")) +
+    geom_vline(xintercept = 0, 
+               color = "gray", 
+               linetype = "dashed", 
+               size = 1)+
+    scale_fill_identity(guide='none')+
+    scale_y_continuous(name = "", 
+                       breaks = NULL) +
+    labs(title = "Probability of Measure 114 Passing", caption = "Each ball represents 1% probability.")
+  
+```
+  
+  
+  
+```{r,echo=F,eval=F}
+  # Is it too much to comprehend? Reduce the number of probabilities
+  
+  
+ mu  <- (50-46.1)
+ std <- 0.47
+  x   <- seq(0.025,.975,0.025) 
+  
+  q_df <- data.frame(x = x,
+                     q = qnorm(x, mu, std)) 
+  
+  q_df$winner <- ifelse(q_df$q <= 0,"#f8f1a9","#b1daf4")
+  
+  q_df
+  
+  ggplot(q_df, aes(q)) +
+    geom_dotplot(aes(fill=winner),binwidth=0.21)+
+    theme_minimal()+
+    geom_vline(xintercept = 0.0275, 
+               color = "gray", 
+               linetype = "dashed", 
+               size = 1)+
+    scale_fill_identity(guide='none')+
+    scale_y_continuous(name = "", 
+                       breaks = NULL)+
+    labs(caption = "Each ball represents 2.5% probability")
+  
+  
+  
+    # As a general principle, quantile dotplots should use a small to moderate 
+    # number of dots. If there are too many dots, then we tend to perceive them 
+    # as a continuum rather than as individual, discrete units. This negates 
+    # the advantages of the discrete plots. 
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
